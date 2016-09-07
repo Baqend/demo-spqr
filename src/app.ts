@@ -1,5 +1,5 @@
 import {Component} from '@angular/core';
-import {db, baqend} from 'baqend';
+import {db, baqend} from 'baqend/realtime';
 
 @Component({
     selector: 'app',

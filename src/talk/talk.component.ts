@@ -1,8 +1,9 @@
 //our root app component
-import {Component, OnInit} from '@angular/core';
+import {Component, OnDestroy, OnInit} from '@angular/core';
 import {ActivatedRoute} from '@angular/router';
 import {StorageService} from '../services/storage.service';
-import {db, baqend} from 'baqend';
+import {db, baqend} from 'baqend/realtime';
+import {Subscription} from "rxjs/Subscription";
 
 @Component({
     selector: 'my-app',
@@ -55,9 +56,10 @@ import {db, baqend} from 'baqend';
     </div>
   `
 })
-export class TalkComponent implements OnInit {
+export class TalkComponent implements OnInit, OnDestroy {
     public talk;
     public questions = [];
+    private subscription: Subscription;
 
     constructor(private storageService: StorageService, private route: ActivatedRoute) {}
 
@@ -65,14 +67,18 @@ export class TalkComponent implements OnInit {
         let id = this.route.snapshot.params['id'];
         db.Talk.load(id, {local: true}).then((talk) => {
             this.talk = talk;
-            return db.Question.find()
+            this.subscription = db.Question.find()
                 .equal('talk', talk)
                 .notEqual('state', 'answered')
-                .descending('votes')
-                .resultList()
-        }).then((questions) => {
-            this.questions = questions;
+                .resultStream(realTimeResult => {
+                    this.questions = realTimeResult;
+                });
         });
+    }
+
+    ngOnDestroy() {
+        if (this.subscription)
+            this.subscription.unsubscribe();
     }
 
     get isSpeaker() {
