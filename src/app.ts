@@ -1,4 +1,5 @@
 import {Component, OnInit} from '@angular/core';
+import {StorageService} from "./services/storage.service";
 import {db, baqend} from 'baqend';
 
 @Component({
@@ -53,7 +54,7 @@ export class App implements OnInit {
   public talk;
   public questions = [];
 
-  constructor() {}
+  constructor(private storageService: StorageService) {}
 
   ngOnInit() {
     let id = 'codetalks';
@@ -80,7 +81,13 @@ export class App implements OnInit {
 
   upVote(question) {
     question.optimisticSave(() => {
-      question.votes += 1;
+      if (question.voters.has(this.storageService.token)) {
+        question.votes -= 1;
+        question.voters.delete(this.storageService.token);
+      } else {
+        question.votes += 1;
+        question.voters.add(this.storageService.token);
+      }
     })
   }
 
